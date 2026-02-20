@@ -98,9 +98,17 @@ onMounted(() => {
     icon: 'lucide-users',
     auth: 1,
   }
+  const ssoConfigApp: App = {
+    name: 'SSO 配置',
+    componentName: 'SsoConfig',
+    icon: 'mdi:shield-account',
+    auth: 1,
+  }
   // 初始化
-  if (authStore.userInfo?.role === 1)
+  if (authStore.userInfo?.role === 1) {
     apps.value.push(adminApp)
+    apps.value.push(ssoConfigApp)
+  }
 
   window.addEventListener('resize', handleResize)
   handleResize()

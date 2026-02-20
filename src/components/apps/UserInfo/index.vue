@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import type { FormInst, FormRules } from 'naive-ui'
 import { NButton, NCard, NDivider, NForm, NFormItem, NInput, NSelect, useDialog, useMessage } from 'naive-ui'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useAppStore, useAuthStore, usePanelState, useUserStore } from '@/store'
 import { languageOptions } from '@/utils/defaultData'
 import type { Language, Theme } from '@/store/modules/app/helper'
 import { logout } from '@/api'
 import { RoundCardModal, SvgIcon } from '@/components/common/'
 import { updateInfo, updatePassword } from '@/api/system/user'
+import { getProviders, getUserBindings, unbindSso } from '@/api/system/sso'
+import type { SsoProvider, UserBinding } from '@/api/system/sso'
 import { updateLocalUserInfo } from '@/utils/cmn'
 import { t } from '@/locales'
 
@@ -62,6 +64,58 @@ const updatePasswordModalFormRules: FormRules = {
   },
 }
 
+const ssoProviders = ref<SsoProvider[]>([])
+const userBindings = ref<UserBinding[]>([])
+const ssoBindModalShow = ref(false)
+
+const loadBindings = async () => {
+  try {
+    const bindRes = await getUserBindings()
+    if (bindRes.code === 0 && bindRes.data)
+      userBindings.value = bindRes.data
+  }
+  catch (e) {
+  }
+}
+
+const loadProviders = async () => {
+  try {
+    const provRes = await getProviders()
+    if (provRes.code === 0 && provRes.data)
+      ssoProviders.value = provRes.data
+  }
+  catch (e) {
+  }
+}
+
+onMounted(() => {
+  loadBindings()
+  loadProviders()
+})
+
+const handleUnbind = (provider: string) => {
+  dialog.warning({
+    title: t('common.warning'),
+    content: '确定要解绑此账号吗？',
+    positiveText: t('common.confirm'),
+    negativeText: t('common.cancel'),
+    onPositiveClick: async () => {
+      const res = await unbindSso(provider)
+      if (res.code === 0) {
+        ms.success(t('common.success'))
+        loadBindings()
+      }
+      else {
+        ms.error(res.msg || t('common.error'))
+      }
+    },
+  })
+}
+
+const handleBind = (provider: string) => {
+  window.location.href = `/api/system/sso/login/${provider}?token=${authStore.token}`
+}
+
 async function logoutApi() {
   await logout()
   userStore.resetUserInfo()
@@ -98,7 +152,7 @@ function handleUpdatePassword(e: MouseEvent) {
       return
     }
     updatePasswordModalState.value.loading = true
-    updatePassword(updatePasswordModalState.value.form.oldPassword, updatePasswordModalState.value.form.password).then(({ code, msg }) => {
+    updatePassword(updatePasswordModalState.value.form.oldPassword, updatePasswordModalState.value.form.password).then(({ code }) => {
       if (code === 0) {
         // 成功
         updatePasswordModalState.value.show = false
@@ -189,6 +243,31 @@ function handleChangeTheme(value: Theme) {
       </div>
 
       <NDivider style="margin: 10px 0;" dashed />
+
+      <div class="mt-[10px]">
+        <div class="text-slate-500 font-bold mb-2">
+          社交账号 / 单点登录 (SSO)
+        </div>
+        <div class="flex flex-col gap-2">
+          <div v-for="bind in userBindings" :key="bind.provider" class="flex items-center justify-between bg-slate-100 dark:bg-zinc-800 p-2 rounded">
+            <div class="flex items-center gap-2">
+              <SvgIcon :icon="bind.provider === 'github' ? 'mdi:github' : bind.provider === 'google' ? 'mdi:google' : 'mdi:link'" />
+              <span>{{ bind.provider }}</span>
+            </div>
+            <NButton size="tiny" type="error" ghost @click="handleUnbind(bind.provider)">
+              解绑
+            </NButton>
+          </div>
+          <NButton size="small" type="primary" dashed @click="ssoBindModalShow = true">
+            <template #icon>
+              <SvgIcon icon="mdi:link-variant" />
+            </template>
+            绑定账号
+          </NButton>
+        </div>
+      </div>
+
+      <NDivider style="margin: 10px 0;" dashed />
       <div>
         <NButton size="small" text type="info" @click="updatePasswordModalState.show = !updatePasswordModalState.show">
           {{ $t('settingUserInfo.updatePassword') }}
@@ -227,6 +306,24 @@ function handleChangeTheme(value: Theme) {
           </NButton>
         </div>
       </template>
+    </RoundCardModal>
+
+    <RoundCardModal v-model:show="ssoBindModalShow" size="small" preset="card" style="width: 400px" title="绑定账号">
+      <div class="flex flex-col gap-2">
+        <NButton
+          v-for="provider in ssoProviders.filter(p => !userBindings.some(b => b.provider === p.provider))"
+          :key="provider.provider"
+          @click="handleBind(provider.provider)"
+        >
+          <template #icon>
+            <SvgIcon :icon="provider.provider === 'github' ? 'mdi:github' : provider.provider === 'google' ? 'mdi:google' : 'mdi:login'" />
+          </template>
+          绑定 {{ provider.name }}
+        </NButton>
+        <div v-if="ssoProviders.filter(p => !userBindings.some(b => b.provider === p.provider)).length === 0" class="text-center text-slate-400">
+          没有可绑定的账号提供商
+        </div>
+      </div>
     </RoundCardModal>
   </div>
 </template>

@@ -52,7 +52,7 @@ const defaultSearchEngineList = ref<DeskModule.SearchBox.SearchEngine[]>([
 
 const defaultState: State = {
   currentSearchEngine: defaultSearchEngineList.value[0],
-  searchEngineList: [] || defaultSearchEngineList,
+  searchEngineList: [...defaultSearchEngineList.value],
   newWindowOpen: false,
 }
 
@@ -111,10 +111,22 @@ function handleClearSearchTerm() {
 
 onMounted(() => {
   moduleConfig.getValueByNameFromCloud<State>('deskModuleSearchBox').then(({ code, data }) => {
-    if (code === 0)
-      state.value = data || defaultState
-    else
-      state.value = defaultState
+    if (code === 0 && data) {
+      // Merge saved custom engines with defaults to ensure we always have the fallbacks
+      const savedEngines = data.searchEngineList || []
+      const customEngines = savedEngines.filter(e => e.isCustom)
+
+      data.searchEngineList = [...defaultSearchEngineList.value, ...customEngines]
+
+      // Keep selected engine valid
+      if (!data.currentSearchEngine || !data.searchEngineList.find(e => e.title === data.currentSearchEngine.title))
+        data.currentSearchEngine = data.searchEngineList[0]
+
+      state.value = data
+    }
+    else {
+      state.value = { ...defaultState, searchEngineList: [...defaultSearchEngineList.value] }
+    }
   })
 })
 </script>
@@ -141,19 +153,14 @@ onMounted(() => {
       <div class="flex items-center">
         <div class="flex items-center">
           <div
-            v-for="item, index in defaultSearchEngineList"
+            v-for="item, index in state.searchEngineList"
             :key="index"
             :title="item.title"
-            class="w-[40px] h-[40px] mr-[10px]  cursor-pointer bg-[#ffffff] flex items-center justify-center rounded-xl"
+            class="w-[40px] h-[40px] mr-[10px] cursor-pointer bg-[#ffffff] flex items-center justify-center rounded-xl"
             @click="handleEngineUpdate(item)"
           >
-            <NAvatar :src="item.iconSrc" style="background-color: transparent;" :size="20" />
+            <NAvatar :src="item.iconSrc || SvgSrcGoogle" style="background-color: transparent;" :size="20" />
           </div>
-        <!-- <div class="w-[40px] h-[40px] ml-[10px] flex justify-center items-center cursor-pointer" @click="handleEngineClick">
-          <NAvatar style="background-color: transparent;" :size="30">
-            <SvgIcon icon="lets-icons:setting-alt-fill" style="font-size: 20px;" />
-          </NAvatar>
-        </div> -->
         </div>
       </div>
 

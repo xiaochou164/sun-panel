@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { VueDraggable } from 'vue-draggable-plus'
 import { NBackTop, NButton, NButtonGroup, NDropdown, NModal, NSkeleton, NSpin, useDialog, useMessage } from 'naive-ui'
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { AppIcon, AppStarter, EditItem } from './components'
 import { Clock, SearchBox, SystemMonitor } from '@/components/deskModule'
 import { SvgIcon } from '@/components/common'
@@ -255,6 +255,72 @@ function getDropdownMenuOptions() {
   return dropdownMenuOptions
 }
 
+// Bing 壁纸轮换逻辑
+let rotateTimer: any = null
+const bingImages = ref<string[]>([])
+const currentBingIndex = ref(0)
+
+async function startBingRotation() {
+  stopBingRotation()
+  try {
+    // 获取 8 张 Bing 壁纸
+    const res = await fetch('/api/openness/bingWallpaper?n=8')
+    const data = await res.json()
+    if (data.code === 0 && data.data?.urls && data.data.urls.length > 0) {
+      bingImages.value = data.data.urls
+      // 如果当前没有壁纸，或者是Bing壁纸（通过URL判断），则设置为第一张
+      // 这里简化逻辑，直接设置为第一张，用户开启此功能就是为了看 Bing 壁纸
+      // 但为了体验，先查找当前壁纸是否在列表中，如果在，则从下一张开始
+      const currentUrl = panelState.panelConfig.backgroundImageSrc
+      let startIndex = 0
+      if (currentUrl) {
+        const foundIndex = bingImages.value.indexOf(currentUrl)
+        if (foundIndex !== -1)
+          startIndex = (foundIndex + 1) % bingImages.value.length
+      }
+
+      currentBingIndex.value = startIndex
+      // 立即应用（除非当前已经是列表中的第一张，避免刷新闪烁？不，用户可能刚开启，直接应用）
+      // 如果当前壁纸不在列表中，或者就是为了切换，直接设置
+      if (bingImages.value[startIndex] !== currentUrl)
+        panelState.panelConfig.backgroundImageSrc = bingImages.value[startIndex]
+
+      // 启动定时器
+      const interval = (panelState.panelConfig.bingAutoRotateInterval || 30) * 60 * 1000
+      rotateTimer = setInterval(() => {
+        currentBingIndex.value = (currentBingIndex.value + 1) % bingImages.value.length
+        panelState.panelConfig.backgroundImageSrc = bingImages.value[currentBingIndex.value]
+      }, interval)
+    }
+  }
+  catch (e) {
+    console.error('Failed to fetch Bing wallpapers', e)
+  }
+}
+
+function stopBingRotation() {
+  if (rotateTimer) {
+    clearInterval(rotateTimer)
+    rotateTimer = null
+  }
+}
+
+watch(() => panelState.panelConfig.bingAutoRotate, (newVal) => {
+  if (newVal)
+    startBingRotation()
+  else
+    stopBingRotation()
+})
+
+watch(() => panelState.panelConfig.bingAutoRotateInterval, (newVal) => {
+  if (panelState.panelConfig.bingAutoRotate)
+    startBingRotation() // 重启以应用新间隔
+})
+
+onUnmounted(() => {
+  stopBingRotation()
+})
+
 onMounted(() => {
   // 更新用户信息
   updateLocalUserInfo()
@@ -504,7 +570,7 @@ function handleAddItem(itemIconGroupId?: number) {
 
     <!-- 悬浮按钮 -->
     <div class="fixed-element shadow-[0_0_10px_2px_rgba(0,0,0,0.2)]">
-      <NButtonGroup vertical>
+      <NButtonGroup size="large">
         <!-- 网络模式切换按钮组 -->
         <NButton
           v-if="panelState.networkMode === PanelStateNetworkModeEnum.lan && panelState.panelConfig.netModeChangeButtonShow" color="#2a2a2a6b"
@@ -629,11 +695,8 @@ html {
 
 .fixed-element {
   position: fixed;
-  /* 将元素固定在屏幕上 */
-  right: 10px;
-  /* 距离屏幕顶部的距离 */
-  bottom: 50px;
-  /* 距离屏幕左侧的距离 */
+  right: 40px;
+  top: 40px;
 }
 
 .icon-info-box {

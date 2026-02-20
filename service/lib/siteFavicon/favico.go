@@ -45,39 +45,14 @@ func GetOneFaviconURL(urlStr string) (string, error) {
 	return "", fmt.Errorf("not found ico")
 }
 
-// 获取远程文件的大小
-func GetRemoteFileSize(url string) (int64, error) {
-	resp, err := http.Head(url)
-	if err != nil {
-		return 0, err
-	}
-	defer resp.Body.Close()
-
-	// 检查HTTP响应状态
-	if resp.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("HTTP request failed, status code: %d", resp.StatusCode)
-	}
-
-	// 获取Content-Length字段，即文件大小
-	size := resp.ContentLength
-	return size, nil
-}
-
-// 下载图片
+// 下载图片（直接 GET，不依赖 HEAD 请求，避免兼容性问题）
 func DownloadImage(url, savePath string, maxSize int64) (*os.File, error) {
-	// 获取远程文件大小
-	fileSize, err := GetRemoteFileSize(url)
-	if err != nil {
-		return nil, err
-	}
-
-	// 判断文件大小是否在阈值内
-	if fileSize > maxSize {
-		return nil, fmt.Errorf("文件太大，不下载。大小：%d字节", fileSize)
+	client := &http.Client{
+		Timeout: 15 * time.Second,
 	}
 
 	// 发送HTTP GET请求获取图片数据
-	response, err := http.Get(url)
+	response, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -101,11 +76,18 @@ func DownloadImage(url, savePath string, maxSize int64) (*os.File, error) {
 	}
 	defer file.Close()
 
-	// 将图片数据写入本地文件
-	_, err = io.Copy(file, response.Body)
+	// 使用 LimitReader 限制最大下载大小，避免恶意超大文件
+	limitedReader := io.LimitReader(response.Body, maxSize+1)
+	written, err := io.Copy(file, limitedReader)
 	if err != nil {
+		os.Remove(destination)
 		return nil, err
 	}
+	if written > maxSize {
+		os.Remove(destination)
+		return nil, fmt.Errorf("文件太大，不下载。大小超过 %d 字节", maxSize)
+	}
+
 	return file, nil
 }
 
@@ -129,11 +111,13 @@ func GetOneFaviconURLAndUpload(urlStr string) (string, bool) {
 	return "", false
 }
 
-func getFaviconURL(url string) ([]string, error) {
+func getFaviconURL(urlStr string) ([]string, error) {
 	var icons []string
 	icons = make([]string, 0)
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+	}
+	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
 		return icons, err
 	}
@@ -163,10 +147,28 @@ func getFaviconURL(url string) ([]string, error) {
 		href, _ := s.Attr("href")
 
 		if strings.Contains(rel, "icon") && href != "" {
-			// fmt.Println(href)
 			icons = append(icons, href)
 		}
 	})
+
+	// 如果 HTML 中没有找到 icon link，fallback 尝试 /favicon.ico
+	if len(icons) == 0 {
+		parsedURL, err := url.Parse(urlStr)
+		if err == nil {
+			faviconURL := parsedURL.Scheme + "://" + parsedURL.Host + "/favicon.ico"
+			checkReq, err := http.NewRequest("GET", faviconURL, nil)
+			if err == nil {
+				checkReq.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
+				checkResp, err := client.Do(checkReq)
+				if err == nil {
+					checkResp.Body.Close()
+					if checkResp.StatusCode == http.StatusOK {
+						icons = append(icons, faviconURL)
+					}
+				}
+			}
+		}
+	}
 
 	if len(icons) == 0 {
 		return icons, errors.New("favicon not found on the page")

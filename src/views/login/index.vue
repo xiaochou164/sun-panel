@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { NButton, NCard, NForm, NFormItem, NGradientText, NInput, NSelect, useMessage } from 'naive-ui'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { login } from '@/api'
 import { useAppStore, useAuthStore } from '@/store'
 import { SvgIcon } from '@/components/common'
@@ -8,6 +8,9 @@ import { router } from '@/router'
 import { t } from '@/locales'
 import { languageOptions } from '@/utils/defaultData'
 import type { Language } from '@/store/modules/app/helper'
+import { getProviders } from '@/api/system/sso'
+import type { SsoProvider } from '@/api/system/sso'
+import { post } from '@/utils/request'
 
 // const userStore = useUserStore()
 const authStore = useAuthStore()
@@ -16,8 +19,66 @@ const ms = useMessage()
 const loading = ref(false)
 const languageValue = ref<Language>(appStore.language)
 
-// const isShowCaptcha = ref<boolean>(false)
-// const isShowRegister = ref<boolean>(false)
+const ssoProviders = ref<SsoProvider[]>([])
+
+onMounted(async () => {
+  // Check for SSO callback token in URL hash
+  const hash = window.location.hash
+  if (hash.includes('?')) {
+    const searchParams = new URLSearchParams(hash.split('?')[1])
+    const ssoToken = searchParams.get('ssoToken')
+    const ssoError = searchParams.get('ssoError')
+
+    if (ssoError) {
+      if (ssoError === 'Bind success') {
+        ms.success('绑定成功')
+        router.push({ path: '/' })
+      }
+      else {
+        ms.error(decodeURIComponent(ssoError))
+      }
+    }
+
+    if (ssoToken) {
+      loading.value = true
+      authStore.setToken(ssoToken)
+
+      // Fetch user info through standard auth flow or simulate login success
+      try {
+        const userInfoRes = await post<any>({ url: '/user/getInfo' })
+        if (userInfoRes.code === 0) {
+          authStore.setUserInfo(userInfoRes.data)
+          ms.success(`Hi ${userInfoRes.data.name || ''},${t('login.welcomeMessage')}`)
+          router.push({ path: '/' })
+        }
+        else {
+          ms.error('Failed to retrieve user info')
+          authStore.removeToken()
+        }
+      }
+      catch (e) {
+        authStore.removeToken()
+      }
+      finally {
+        loading.value = false
+      }
+    }
+  }
+
+  // Load SSO providers
+  try {
+    const res = await getProviders()
+    if (res.code === 0 && res.data)
+      ssoProviders.value = res.data
+  }
+  catch (e) {
+    console.error(e)
+  }
+})
+
+const goSsoLogin = (provider: string) => {
+  window.location.href = `/api/system/sso/login/${provider}`
+}
 
 const form = ref<Login.LoginReqest>({
   username: '',
@@ -40,22 +101,20 @@ const loginPost = async () => {
     }
     else {
       loading.value = false
-      // captchaRef.value.refresh()
     }
   }
   catch (error) {
     loading.value = false
-    // 请检查网络或者服务器错误
     console.log(error)
   }
 }
 
 function handleSubmit() {
-  // 点击登录按钮触发
   loginPost()
 }
 
 function handleChangeLanuage(value: Language) {
+// ... continuing code
   languageValue.value = value
   appStore.setLanguage(value)
 }
@@ -106,6 +165,27 @@ function handleChangeLanuage(value: Language) {
             {{ $t('login.loginButton') }}
           </NButton>
         </NFormItem>
+
+        <div v-if="ssoProviders.length > 0" class="flex flex-col items-center mt-2 mb-4">
+          <div class="w-full flex items-center justify-between text-slate-400 mb-4 px-2">
+            <div class="h-[1px] bg-slate-200 flex-1" />
+            <span class="px-2 text-xs">OR</span>
+            <div class="h-[1px] bg-slate-200 flex-1" />
+          </div>
+          <div class="flex gap-4 justify-center flex-wrap">
+            <NButton
+              v-for="provider in ssoProviders"
+              :key="provider.provider"
+              tertiary
+              @click="goSsoLogin(provider.provider)"
+            >
+              <template #icon>
+                <SvgIcon :icon="provider.provider === 'github' ? 'mdi:github' : provider.provider === 'google' ? 'mdi:google' : 'mdi:login'" />
+              </template>
+              {{ provider.name }}
+            </NButton>
+          </div>
+        </div>
 
         <!-- <div class="flex justify-end">
           <NButton v-if="isShowRegister" quaternary type="info" class="flex" @click="$router.push({ path: '/register' })">

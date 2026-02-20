@@ -60,6 +60,8 @@ declare namespace Panel {
         systemMonitorShowTitle?:boolean
         systemMonitorPublicVisitModeShow?:boolean
         netModeChangeButtonShow?:boolean
+        bingAutoRotate?:boolean
+        bingAutoRotateInterval?:number
     }
 
     interface userConfig{
