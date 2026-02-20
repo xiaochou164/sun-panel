@@ -23,7 +23,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Build frontend
-        run: pnpm run build
+        run: |
+          pnpm run build || (echo "Build failed. Dumping logs:" && pnpm run type-check && npx vite build --debug && exit 1)
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
         with:
