@@ -21,7 +21,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
-      - name: Set up Docker Buildx 
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
@@ -29,11 +29,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
+
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
-          context: .  # 这里在项目根目录找Dockerfile构建
+          context: . # 这里在项目根目录找Dockerfile构建
           platforms: linux/amd64,linux/arm,linux/arm64
-          push: true 
+          push: true
           tags: ${{ vars.DOCKER_IMAGE_NAME }}:${{ env.APP_VERSION }}
