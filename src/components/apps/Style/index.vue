@@ -358,7 +358,7 @@ function handleDeleteCustomEngine(index: number) {
 
       <div v-if="panelState.panelConfig.bingAutoRotate" class="flex items-center mt-[10px]">
         <span class="mr-[10px]">轮换间隔 (分钟)</span>
-        <NInput v-model:value="panelState.panelConfig.bingAutoRotateInterval" type="number" size="small" :style="{ width: '100px' }" placeholder="30" />
+        <NInput :value="String(panelState.panelConfig.bingAutoRotateInterval || '')" type="text" size="small" :style="{ width: '100px' }" placeholder="30" @update:value="(val: string) => panelState.panelConfig.bingAutoRotateInterval = Number(val)" />
       </div>
 
       <div class="flex items-center mt-[10px]">
@@ -390,7 +390,7 @@ function handleDeleteCustomEngine(index: number) {
             <span class="mr-[10px]">{{ $t('apps.baseSettings.maxWidth') }}</span>
             <div class="flex">
               <NInputGroup>
-                <NInput v-model:value="panelState.panelConfig.maxWidth" size="small" type="number" :maxlength="10" :style="{ width: '100px' }" placeholder="1200" />
+                <NInput :value="String(panelState.panelConfig.maxWidth || '')" size="small" type="text" :maxlength="10" :style="{ width: '100px' }" placeholder="1200" @update:value="(val: string) => panelState.panelConfig.maxWidth = Number(val)" />
                 <NSelect v-model:value="panelState.panelConfig.maxWidthUnit" :style="{ width: '80px' }" :options="maxWidthUnitOption" size="small" />
               </NInputGroup>
             </div>
