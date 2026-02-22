@@ -62,8 +62,15 @@ jobs:
         working-directory: ./service
         run: |
           go build -o sun-panel --ldflags="-X sun-panel/global.RUNCODE=release" main.go
+          GOOS=linux GOARCH=arm64 go build -o sun-panel-arm64 --ldflags="-X sun-panel/global.RUNCODE=release" main.go
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: sun-panel-linux-amd64
           path: service/sun-panel
+
+      - name: Upload ARM binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: sun-panel-linux-arm64
+          path: service/sun-panel-arm64
