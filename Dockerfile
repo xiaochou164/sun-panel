@@ -34,12 +34,13 @@ COPY ./service .
 
 RUN apk add --no-cache bash curl gcc git musl-dev
 
-RUN go env -w GO111MODULE=on \
-    && export PATH=$PATH:/go/bin \
-    && go install -a -v github.com/go-bindata/go-bindata/...@latest \
-    && go install -a -v github.com/elazarl/go-bindata-assetfs/...@v1.0.1 \
-    && go-bindata-assetfs -o=assets/bindata.go -pkg=assets assets/... \
-    && go build -o sun-panel --ldflags="-X sun-panel/global.RUNCODE=release -X sun-panel/global.ISDOCKER=docker" main.go
+RUN go env -w GO111MODULE=on
+RUN export PATH=$PATH:$(go env GOPATH)/bin
+
+RUN go install -a -v github.com/go-bindata/go-bindata/...@latest
+RUN go install -a -v github.com/elazarl/go-bindata-assetfs/...@v1.0.1
+RUN $(go env GOPATH)/bin/go-bindata-assetfs -o=assets/bindata.go -pkg=assets assets/...
+RUN go build -o sun-panel --ldflags="-X sun-panel/global.RUNCODE=release -X sun-panel/global.ISDOCKER=docker" main.go
 
 
 
