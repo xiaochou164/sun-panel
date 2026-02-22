@@ -82,7 +82,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push docker image
         run: |
-          docker buildx build --context . --file Dockerfile --platform linux/amd64,linux/arm64 --push --tag ghcr.io/${{ github.repository }}:latest > build_docker_error.log 2>&1 || (echo "=== DOCKER BUILD FAILED ===" && tail -n 200 build_docker_error.log && exit 1)
+          docker buildx build --file Dockerfile --platform linux/amd64,linux/arm64 --push --tag ghcr.io/${{ github.repository }}:latest . > build_docker_error.log 2>&1 || (echo "=== DOCKER BUILD FAILED ===" && tail -n 200 build_docker_error.log && exit 1)
       - name: Upload Docker build logs
         if: always()
         uses: actions/upload-artifact@v4
