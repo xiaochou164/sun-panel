@@ -81,12 +81,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push docker image
-        uses: docker/build-push-action@v5
+        run: |
+          docker buildx build --context . --file Dockerfile --platform linux/amd64,linux/arm64 --push --tag ghcr.io/${{ github.repository }}:latest > build_docker_error.log 2>&1 || (cat build_docker_error.log; exit 1)
+      - name: Upload Docker build logs
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          name: build-docker-error-log
+          path: build_docker_error.log
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
