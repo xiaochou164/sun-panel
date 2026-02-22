@@ -115,4 +115,5 @@ jobs:
           git checkout -b debug-logs || git checkout debug-logs
           git add debug_bindata.log
           git commit -m "chore: add debug logs" || true
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git push -f origin debug-logs
