@@ -100,3 +100,11 @@ jobs:
         with:
           name: sun-panel-linux-arm64
           path: service/sun-panel-arm64
+
+  debug-go-bindata:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Debug Dockerfile Go install
+        run: |
+          docker run --rm -v $(pwd):/build -w /build golang:1.24-alpine3.21 sh -c "apk add --no-cache bash curl gcc git musl-dev && go env -w GO111MODULE=on && export PATH=\$PATH:\$(go env GOPATH)/bin && go install -x -a -v github.com/go-bindata/go-bindata/...@latest && go install -x -a -v github.com/elazarl/go-bindata-assetfs/...@v1.0.1"
