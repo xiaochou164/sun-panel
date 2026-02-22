@@ -46,6 +46,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache-dependency-path: service/go.sum
       - name: Download frontend artifact
         uses: actions/download-artifact@v4
         with:
@@ -55,7 +56,7 @@ jobs:
         working-directory: ./service
         run: |
           go install -a -v github.com/go-bindata/go-bindata/...@latest
-          go install -a -v github.com/elazarl/go-bindata-assetfs/...@latest
+          go install -a -v github.com/elazarl/go-bindata-assetfs/...@v1.0.1
           export PATH=$PATH:$(go env GOPATH)/bin
           go-bindata-assetfs -o=assets/bindata.go -pkg=assets assets/...
       - name: Build backend
