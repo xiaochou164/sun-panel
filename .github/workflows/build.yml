@@ -62,7 +62,29 @@ jobs:
         working-directory: ./service
         run: |
           go build -o sun-panel --ldflags="-X sun-panel/global.RUNCODE=release" main.go
+
           GOOS=linux GOARCH=arm64 go build -o sun-panel-arm64 --ldflags="-X sun-panel/global.RUNCODE=release" main.go
+
+  build-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          outputs: type=docker,dest=/tmp/sun-panel-image.tar
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sun-panel-docker-image
+          path: /tmp/sun-panel-image.tar
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
