@@ -30,7 +30,7 @@ export function defaultStatePanelConfig(): Panel.panelConfig {
     systemMonitorPublicVisitModeShow: false,
     netModeChangeButtonShow: true,
     bingAutoRotate: false,
-    bingAutoRotateInterval: 30,
+    bingAutoRotateInterval: 60,
   }
 }
 

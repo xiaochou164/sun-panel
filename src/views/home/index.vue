@@ -286,7 +286,7 @@ async function startBingRotation() {
         panelState.panelConfig.backgroundImageSrc = bingImages.value[startIndex]
 
       // 启动定时器
-      const interval = (panelState.panelConfig.bingAutoRotateInterval || 30) * 60 * 1000
+      const interval = (panelState.panelConfig.bingAutoRotateInterval || 60) * 60 * 1000
       rotateTimer = setInterval(() => {
         currentBingIndex.value = (currentBingIndex.value + 1) % bingImages.value.length
         panelState.panelConfig.backgroundImageSrc = bingImages.value[currentBingIndex.value]

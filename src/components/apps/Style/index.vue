@@ -358,7 +358,7 @@ function handleDeleteCustomEngine(index: number) {
 
       <div v-if="panelState.panelConfig.bingAutoRotate" class="flex items-center mt-[10px]">
         <span class="mr-[10px]">轮换间隔 (分钟)</span>
-        <NInput :value="String(panelState.panelConfig.bingAutoRotateInterval || '')" type="text" size="small" :style="{ width: '100px' }" placeholder="30" @update:value="(val: string) => panelState.panelConfig.bingAutoRotateInterval = Number(val)" />
+        <NInput :value="String(panelState.panelConfig.bingAutoRotateInterval || '')" type="text" size="small" :style="{ width: '100px' }" placeholder="60" @update:value="(val: string) => panelState.panelConfig.bingAutoRotateInterval = Number(val)" />
       </div>
 
       <div class="flex items-center mt-[10px]">
