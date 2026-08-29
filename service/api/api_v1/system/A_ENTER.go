@@ -10,4 +10,5 @@ type ApiSystem struct {
 	MonitorApi      MonitorApi
 	SsoApi          SsoApi
 	SsoConfigApi    SsoConfigApi
+	OpenApiConfigApi OpenApiConfigApi
 }

@@ -21,6 +21,9 @@ func InitRouters(addr string) error {
 	panel.Init(routerGroup)
 	openness.Init(routerGroup)
 
+	// MCP Streamable HTTP 端点（/mcp，需 OpenAPI Key 鉴权）
+	InitMcpRouter(router)
+
 	// WEB文件服务
 	{
 		webPath := "./web"

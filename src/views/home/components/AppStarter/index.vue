@@ -104,10 +104,17 @@ onMounted(() => {
     icon: 'mdi:shield-account',
     auth: 1,
   }
+  const openApiConfigApp: App = {
+    name: 'OpenAPI / MCP',
+    componentName: 'OpenApiConfig',
+    icon: 'mdi:api',
+    auth: 1,
+  }
   // 初始化
   if (authStore.userInfo?.role === 1) {
     apps.value.push(adminApp)
     apps.value.push(ssoConfigApp)
+    apps.value.push(openApiConfigApp)
   }
 
   window.addEventListener('resize', handleResize)

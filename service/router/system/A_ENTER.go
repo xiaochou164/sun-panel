@@ -12,4 +12,5 @@ func Init(routerGroup *gin.RouterGroup) {
 	InitMonitorRouter(routerGroup)
 	InitSsoRouter(routerGroup)
 	InitSsoConfigRouter(routerGroup)
+	InitOpenApiConfigRouter(routerGroup)
 }
