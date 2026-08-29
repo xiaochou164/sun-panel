@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { NAvatar, NImage } from 'naive-ui'
 import { computed, ref, withDefaults } from 'vue'
+import SvgIcon from '@/components/common/SvgIcon/index.vue'
 import { SvgIconOnline } from '@/components/common'
 
 interface Prop {
@@ -40,6 +41,13 @@ const iconExt = computed(() => {
         <template v-else-if="itemIcon?.itemType === 3">
           <NAvatar :size="props.size" :style="{ backgroundColor: (forceBackground ?? itemIcon?.backgroundColor) || defaultBackground }">
             <SvgIconOnline style="font-size: 35px;" :icon="itemIcon.text" />
+          </NAvatar>
+        </template>
+
+        <!-- 本地 SVG sprite 图标，不依赖外部 Iconify 网络 -->
+        <template v-else-if="itemIcon?.itemType === 4">
+          <NAvatar :size="props.size" :style="{ backgroundColor: (forceBackground ?? itemIcon?.backgroundColor) || defaultBackground }">
+            <SvgIcon style="font-size: 35px;" :icon="itemIcon.text || 'majesticons-applications'" />
           </NAvatar>
         </template>
       </template>
