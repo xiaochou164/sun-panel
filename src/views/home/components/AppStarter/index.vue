@@ -111,7 +111,7 @@ onMounted(() => {
     auth: 1,
   }
   // 初始化
-  if (authStore.userInfo?.role === 1) {
+  if (Number(authStore.userInfo?.role) === 1) {
     apps.value.push(adminApp)
     apps.value.push(ssoConfigApp)
     apps.value.push(openApiConfigApp)

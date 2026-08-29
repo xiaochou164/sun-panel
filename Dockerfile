@@ -38,7 +38,8 @@ RUN go env -w GO111MODULE=on \
     && go build -o sun-panel --ldflags="-X sun-panel/global.RUNCODE=release -X sun-panel/global.ISDOCKER=docker" main.go
 
 # run_image
-FROM alpine
+# 复用已验证的运行层，避免构建时再次访问 Alpine 包源
+FROM sun-panel-custom:latest
 
 WORKDIR /app
 
@@ -48,9 +49,7 @@ COPY --from=server_image /build/sun-panel /app/sun-panel
 
 EXPOSE 3002
 
-RUN sed -i "s@dl-cdn.alpinelinux.org@mirrors.aliyun.com@g" /etc/apk/repositories \
-    && apk add --no-cache bash ca-certificates su-exec tzdata \
-    && chmod +x ./sun-panel \
+RUN chmod +x ./sun-panel \
     && ./sun-panel -config
 
 CMD ./sun-panel
